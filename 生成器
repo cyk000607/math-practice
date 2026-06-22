@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>数学每日练习题生成器</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: "楷体", "KaiTi", "STKaiti", serif;
+  background: #fffdf5;
+  color: #2c2c2c;
+  padding: 20px;
+  min-height: 100vh;
+}
+.page {
+  max-width: 860px;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  padding: 28px 36px;
+}
+
+/* ── 顶部工具栏（打印时隐藏） ── */
+.toolbar {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.btn {
+  padding: 10px 28px;
+  font-size: 16px;
+  font-family: "楷体", "KaiTi", serif;
+  border: none;
+  border-radius: 24px;
+  cursor: pointer;
+  transition: transform .1s, box-shadow .1s;
+  font-weight: bold;
+  letter-spacing: 1px;
+}
+.btn:active { transform: scale(0.96); }
+.btn-generate {
+  background: linear-gradient(135deg, #4361ee, #7209b7);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(67,97,238,0.35);
+}
+.btn-generate:hover { box-shadow: 0 6px 18px rgba(67,97,238,0.5); }
+.btn-print {
+  background: #fff;
+  color: #e76f51;
+  border: 2px solid #f4a261;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.btn-print:hover { background: #fff8f0; }
+
+/* ── 头部 ── */
+.header {
+  text-align: center;
+  margin-bottom: 22px;
+  padding-bottom: 14px;
+  border-bottom: 2px dashed #f4a261;
+}
+.header h1 { font-size: 22px; color: #e76f51; letter-spacing: 2px; }
+.header .date-line { font-size: 13px; color: #888; margin-top: 5px; }
+.score-box {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 4px 18px;
+  border: 2px solid #f4a261;
+  border-radius: 20px;
+  font-size: 13px;
+  color: #e76f51;
+}
+
+/* ── 章节标题 ── */
+.section-title {
+  font-size: 15px;
+  font-weight: bold;
+  color: #fff;
+  background: linear-gradient(135deg, #4361ee, #7209b7);
+  border-radius: 8px;
+  padding: 5px 14px;
+  margin: 18px 0 14px;
+  display: inline-block;
+}
+
+/* ── 二年级题目网格：5列 ── */
+.g2-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 14px 10px;
+  margin-bottom: 6px;
+}
+.problem-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.prob-num { font-size: 12px; color: #888; margin-bottom: 3px; }
+
+/* ── 竖式通用 ── */
+.problem-box {
+  border: 1.5px solid #ddd;
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: #fafafa;
+  min-width: 88px;
+  text-align: right;
+}
+.problem-box.wide3 { min-width: 116px; }
+.problem-box.full-width { width: 100%; text-align: left; }
+
+.vertical-calc {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: 21px;
+  font-family: "Courier New", monospace;
+  line-height: 1.55;
+}
+.num-row { white-space: nowrap; }
+.op-row  { position: relative; }
+.op-row2 { position: relative; }
+.op-sign {
+  position: absolute;
+  left: -26px;
+  color: #e76f51;
+  font-weight: bold;
+}
+.divider {
+  width: 100%;
+  border-top: 2px solid #444;
+  margin: 3px 0;
+}
+.blank-answer {
+  min-width: 72px;
+  min-height: 26px;
+  border-bottom: 1.5px dashed #bbb;
+  display: block;
+  margin-top: 2px;
+}
+
+/* ── 除法竖式（标准格式） ── */
+.divide-outer {
+  min-width: 140px;
+  text-align: left;
+  padding: 8px 14px 8px 10px;
+}
+.divide-layout {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  font-family: "Courier New", monospace;
+  font-size: 21px;
+}
+.divide-quotient-row {
+  display: flex;
+  align-items: flex-end;
+}
+.divide-divisor-placeholder {
+  min-width: 34px;
+  flex-shrink: 0;
+}
+.divide-quotient-line {
+  flex: 1;
+  border-bottom: 2px solid #444;
+  min-width: 80px;
+}
+.divide-quotient-blank { min-height: 26px; }
+.divide-body-row {
+  display: flex;
+  align-items: stretch;
+}
+.divide-divisor {
+  display: flex;
+  align-items: center;
+  font-size: 21px;
+  white-space: nowrap;
+  padding-right: 2px;
+}
+.divide-bracket-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.divide-dividend {
+  border-left: 2px solid #444;
+  padding-left: 6px;
+  font-size: 21px;
+  white-space: nowrap;
+  line-height: 1.5;
+}
+
+/* ── 三年级题目行 ── */
+.g3-row {
+  display: flex;
+  gap: 36px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.g3-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.mixed-row { align-items: center; }
+
+/* ── 混合运算 ── */
+.mixed-expr {
+  font-size: 23px;
+  font-family: "Courier New", monospace;
+  letter-spacing: 2px;
+  padding: 6px 0;
+}
+.blank-box {
+  display: inline-block;
+  min-width: 88px;
+  border-bottom: 2px solid #555;
+  margin-left: 4px;
+  vertical-align: bottom;
+}
+
+/* ── 占位提示（未生成时） ── */
+.placeholder {
+  text-align: center;
+  color: #ccc;
+  font-size: 18px;
+  padding: 40px 0 20px;
+  letter-spacing: 2px;
+}
+
+/* ── 页脚 ── */
+.footer {
+  margin-top: 24px;
+  padding-top: 14px;
+  border-top: 2px dashed #f4a261;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: #aaa;
+}
+.star-row { display: flex; gap: 6px; }
+.star { font-size: 20px; color: #ddd; cursor: pointer; transition: color .2s; }
+.star:hover, .star.lit { color: #f4a261; }
+
+/* ── 打印样式 ── */
+@media print {
+  body { background: #fff; padding: 0; }
+  .page { box-shadow: none; border-radius: 0; padding: 16px 20px; }
+  .toolbar { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- 工具栏 -->
+  <div class="toolbar">
+    <button class="btn btn-generate" onclick="generateAll()">🎲 生成新题目</button>
+    <button class="btn btn-print" onclick="window.print()">🖨️ 打印练习</button>
+  </div>
+
+  <!-- 页头 -->
+  <div class="header">
+    <h1>📐 每日数学练习</h1>
+    <div class="date-line" id="date-line">——</div>
+    <div class="score-box">得分：_______ 分 &nbsp;|&nbsp; 用时：_______ 分钟</div>
+  </div>
+
+  <!-- 题目区域 -->
+  <div id="content-area">
+    <div class="placeholder">点击「生成新题目」开始练习 ✏️</div>
+  </div>
+
+  <!-- 页脚 -->
+  <div class="footer" id="footer" style="display:none">
+    <div>认真检查，相信自己！加油！⭐</div>
+    <div class="star-row" id="stars"></div>
+  </div>
+
+</div>
+
+<script>
+// ──────────────────────────────────────────
+// 工具函数
+// ──────────────────────────────────────────
+function randInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+function choose(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+// ──────────────────────────────────────────
+// 题目生成
+// ──────────────────────────────────────────
+
+/** 两位数加法（有进位，和 ≤ 99） */
+function genAdd2() {
+  while (true) {
+    const a = randInt(20, 89);
+    const b = randInt(10, 99 - a);
+    if ((a % 10) + (b % 10) >= 10)
+      return { kind:'two', a, b, op:'+' };
+  }
+}
+
+/** 两位数减法（有借位，100以内） */
+function genSub2() {
+  while (true) {
+    const a = randInt(21, 99);
+    const b = randInt(10, a - 1);
+    if ((a % 10) < (b % 10))
+      return { kind:'two', a, b, op:'-' };
+  }
+}
+
+/** 三位数加法（有进位，和 ≤ 999） */
+function genAdd3() {
+  while (true) {
+    const a = randInt(102, 699);
+    const b = randInt(101, 999 - a);
+    const onesCarry = (a % 10 + b % 10) >= 10;
+    const tensCarry = (Math.floor(a/10)%10 + Math.floor(b/10)%10 + (onesCarry?1:0)) >= 10;
+    if (onesCarry || tensCarry)
+      return { kind:'three', a, b, op:'+' };
+  }
+}
+
+/** 三位数减法（有借位） */
+function genSub3() {
+  while (true) {
+    const a = randInt(201, 999);
+    const b = randInt(101, a - 10);
+    const onesBorrow = (a % 10) < (b % 10);
+    const tensBorrow = (Math.floor(a/10)%10 - (onesBorrow?1:0)) < (Math.floor(b/10)%10);
+    if (onesBorrow || tensBorrow)
+      return { kind:'three', a, b, op:'-' };
+  }
+}
+
+/** 连加：a + b + c */
+function genChainAdd() {
+  while (true) {
+    const a = randInt(20, 60);
+    const b = randInt(15, 60);
+    const c = randInt(10, 200 - a - b);
+    if (c >= 10 && a + b + c <= 199)
+      return { kind:'chain', a, b, c, op:'++' };
+  }
+}
+
+/** 连减：a - b - c */
+function genChainSub() {
+  while (true) {
+    const a = randInt(60, 99);
+    const b = randInt(10, 30);
+    const c = randInt(10, a - b - 5);
+    if (c >= 10 && a - b - c > 0)
+      return { kind:'chain', a, b, c, op:'--' };
+  }
+}
+
+/** 10道二年级题目：5~6道两位数，4~5道提高题 */
+function genGrade2() {
+  const hardCount = choose([4, 5]);
+  const easyCount = 10 - hardCount;
+  const problems = [];
+
+  const half = Math.floor(easyCount / 2);
+  for (let i = 0; i < half; i++) problems.push(genAdd2());
+  for (let i = 0; i < easyCount - half; i++) problems.push(genSub2());
+
+  const hardPool = [genAdd3, genSub3, genChainAdd, genChainSub];
+  for (let i = 0; i < hardCount; i++) {
+    problems.push(hardPool[i % hardPool.length]());
+  }
+  // 洗牌
+  for (let i = problems.length - 1; i > 0; i--) {
+    const j = randInt(0, i);
+    [problems[i], problems[j]] = [problems[j], problems[i]];
+  }
+  return problems;
+}
+
+/** 三年级：三位数 × 一位数 */
+function genMult() {
+  const a = randInt(102, 499);
+  const b = randInt(2, 9);
+  return { a, b, result: a * b };
+}
+
+/** 三年级：三位数 ÷ 一位数（能整除） */
+function genDiv() {
+  while (true) {
+    const b = randInt(2, 9);
+    const result = randInt(12, 99);
+    const a = b * result;
+    if (a >= 100 && a <= 900) return { a, b, result };
+  }
+}
+
+/**
+ * 三年级混合运算（增强版 v2）
+ * - 运算次数：随机 2~5 次（2~5 个运算符）
+ * - 运算符：含加、减、乘，乘号位置随机，至少一个
+ * - 括号概率 70%，遍历所有可加括号位置随机挑选，
+ *   支持 (a±b)×c 和 a×(b±c) 两种模式，括号可出现在任意位置
+ * - 结果为正整数 1~999
+ */
+function genMixed() {
+  // ── 工具：按优先级计算数组表达式 ──
+  function evalExpr(ns, os) {
+    let t = [...ns], o = [...os];
+    let i = 0;
+    while (i < o.length) {
+      if (o[i] === '×') { t.splice(i, 2, t[i] * t[i+1]); o.splice(i, 1); }
+      else i++;
+    }
+    let r = t[0];
+    for (let j = 0; j < o.length; j++) r = o[j] === '+' ? r + t[j+1] : r - t[j+1];
+    return r;
+  }
+
+  for (let t = 0; t < 400; t++) {
+    const opCount = randInt(2, 5);
+
+    // 生成操作符，至少一个乘号
+    let opList = Array.from({length: opCount}, () => choose(['+', '-', '×']));
+    if (!opList.includes('×')) opList[randInt(0, opCount-1)] = '×';
+
+    // 生成操作数：参与乘法的用小数，否则两位数
+    const nums = [];
+    for (let i = 0; i <= opCount; i++) {
+      const inMul = (i < opCount && opList[i] === '×') || (i > 0 && opList[i-1] === '×');
+      nums.push(inMul ? randInt(2, 12) : randInt(8, 40));
+    }
+
+    // 无括号基础结果
+    const baseResult = evalExpr(nums, opList);
+    if (baseResult <= 0 || baseResult > 999) continue;
+
+    // ── 70% 概率尝试加括号 ──
+    if (Math.random() < 0.70) {
+      // 收集所有合法括号候选位置
+      // 类型 L：位置 i 满足 opList[i] 是 +/- 且 opList[i+1] 是 × → (nums[i] ± nums[i+1]) × nums[i+2]
+      // 类型 R：位置 i 满足 opList[i] 是 × 且 opList[i+1] 是 +/- → nums[i] × (nums[i+1] ± nums[i+2])
+      const cands = [];
+      for (let i = 0; i < opCount - 1; i++) {
+        const op0 = opList[i], op1 = opList[i+1];
+        if ((op0 === '+' || op0 === '-') && op1 === '×') {
+          // L 型：inner = nums[i] ± nums[i+1]，需 > 0
+          const inner = op0 === '+' ? nums[i] + nums[i+1] : nums[i] - nums[i+1];
+          if (inner > 0) cands.push({type:'L', i, inner});
+        }
+        if (op0 === '×' && (op1 === '+' || op1 === '-')) {
+          // R 型：inner = nums[i+1] ± nums[i+2]，需 > 0
+          const inner = op1 === '+' ? nums[i+1] + nums[i+2] : nums[i+1] - nums[i+2];
+          if (inner > 0) cands.push({type:'R', i, inner});
+        }
+      }
+
+      if (cands.length > 0) {
+        // 随机选一个位置
+        const cand = choose(cands);
+        const i = cand.i;
+
+        if (cand.type === 'L') {
+          // (nums[i] opList[i] nums[i+1]) × nums[i+2]  + 剩余部分
+          const bracketVal = cand.inner * nums[i+2];
+          const newNums = [...nums.slice(0, i), bracketVal, ...nums.slice(i+3)];
+          const newOps  = [...opList.slice(0, i), ...opList.slice(i+2)];
+          const r = evalExpr(newNums, newOps);
+          if (r > 0 && r <= 999) {
+            // 拼表达式字符串
+            let parts = nums.map(String);
+            let ops2  = [...opList];
+            const bracketStr = `(${nums[i]}${opList[i]}${nums[i+1]})×${nums[i+2]}`;
+            parts.splice(i, 3, bracketStr);
+            ops2.splice(i, 2);
+            let expr = parts[0];
+            for (let k = 0; k < ops2.length; k++) expr += ops2[k] + parts[k+1];
+            return { expr, result: r };
+          }
+        } else {
+          // nums[i] × (nums[i+1] opList[i+1] nums[i+2])  + 剩余部分
+          const bracketVal = nums[i] * cand.inner;
+          const newNums = [...nums.slice(0, i), bracketVal, ...nums.slice(i+3)];
+          const newOps  = [...opList.slice(0, i), ...opList.slice(i+2)];
+          const r = evalExpr(newNums, newOps);
+          if (r > 0 && r <= 999) {
+            let parts = nums.map(String);
+            let ops2  = [...opList];
+            const bracketStr = `${nums[i]}×(${nums[i+1]}${opList[i+1]}${nums[i+2]})`;
+            parts.splice(i, 3, bracketStr);
+            ops2.splice(i, 2);
+            let expr = parts[0];
+            for (let k = 0; k < ops2.length; k++) expr += ops2[k] + parts[k+1];
+            return { expr, result: r };
+          }
+        }
+      }
+    }
+
+    // 无括号路径
+    let expr = String(nums[0]);
+    for (let j = 0; j < opList.length; j++) expr += opList[j] + nums[j+1];
+    return { expr, result: baseResult };
+  }
+
+  // 兜底
+  const a = randInt(12, 30), b = randInt(2, 9), c = randInt(5, 30);
+  return { expr: `${a}×${b}+${c}`, result: a*b+c };
+}
+
+// ──────────────────────────────────────────
+// HTML 渲染函数
+// ──────────────────────────────────────────
+
+function renderTwo(p) {
+  return `<div class="problem-box">
+    <div class="vertical-calc">
+      <div class="num-row top-num">${p.a}</div>
+      <div class="num-row op-row"><span class="op-sign">${p.op}</span>${p.b}</div>
+      <div class="divider"></div>
+      <div class="num-row blank-answer"></div>
+    </div>
+  </div>`;
+}
+
+function renderThree(p) {
+  return `<div class="problem-box wide3">
+    <div class="vertical-calc">
+      <div class="num-row top-num">${p.a}</div>
+      <div class="num-row op-row"><span class="op-sign">${p.op}</span>${p.b}</div>
+      <div class="divider"></div>
+      <div class="num-row blank-answer"></div>
+    </div>
+  </div>`;
+}
+
+function renderChain(p) {
+  const s = p.op === '++' ? '+' : '-';
+  return `<div class="problem-box wide3">
+    <div class="vertical-calc">
+      <div class="num-row top-num">${p.a}</div>
+      <div class="num-row op-row"><span class="op-sign">${s}</span>${p.b}</div>
+      <div class="num-row op-row2"><span class="op-sign">${s}</span>${p.c}</div>
+      <div class="divider"></div>
+      <div class="num-row blank-answer"></div>
+    </div>
+  </div>`;
+}
+
+function renderMult(p) {
+  return `<div class="problem-box wide3">
+    <div class="vertical-calc">
+      <div class="num-row top-num">${p.a}</div>
+      <div class="num-row op-row"><span class="op-sign">×</span>${p.b}</div>
+      <div class="divider"></div>
+      <div class="num-row blank-answer"></div>
+    </div>
+  </div>`;
+}
+
+function renderDiv(p) {
+  return `<div class="problem-box divide-outer">
+    <div class="divide-layout">
+      <div class="divide-quotient-row">
+        <div class="divide-divisor-placeholder"></div>
+        <div class="divide-quotient-line">
+          <div class="divide-quotient-blank"></div>
+        </div>
+      </div>
+      <div class="divide-body-row">
+        <div class="divide-divisor">${p.b}</div>
+        <div class="divide-bracket-col">
+          <div class="divide-dividend">${p.a}</div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderMixedHTML(p) {
+  // 算式较长时缩小字号
+  const len = p.expr.length;
+  const fontSize = len > 20 ? '17px' : len > 14 ? '20px' : '23px';
+  return `<div class="problem-box full-width">
+    <div class="mixed-expr" style="font-size:${fontSize}">${p.expr} = <span class="blank-box"></span></div>
+  </div>`;
+}
+
+function renderProblemItem(prob, idx) {
+  let box = '';
+  if (prob.kind === 'two')   box = renderTwo(prob);
+  if (prob.kind === 'three') box = renderThree(prob);
+  if (prob.kind === 'chain') box = renderChain(prob);
+  return `<div class="problem-item"><span class="prob-num">${idx}.</span>${box}</div>`;
+}
+
+// ──────────────────────────────────────────
+// 主入口：生成并渲染
+// ──────────────────────────────────────────
+function generateAll() {
+  // 更新日期
+  const now = new Date();
+  const WEEKDAYS = ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'];
+  const dateStr = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日 ${WEEKDAYS[now.getDay()]}`;
+  document.getElementById('date-line').textContent = dateStr;
+
+  // 生成题目
+  const g2 = genGrade2();
+  const mult = genMult();
+  const div  = genDiv();
+  const mixed = genMixed();
+
+  // 二年级题目网格
+  let g2HTML = '';
+  g2.forEach((p, i) => { g2HTML += renderProblemItem(p, i + 1); });
+
+  // 三年级
+  const g3HTML = `
+    <div class="g3-row">
+      <div class="g3-item">
+        <span class="prob-num">11.</span>
+        ${renderMult(mult)}
+      </div>
+      <div class="g3-item">
+        <span class="prob-num">12.</span>
+        ${renderDiv(div)}
+      </div>
+    </div>
+    <div class="g3-row mixed-row">
+      <span class="prob-num">13.</span>
+      ${renderMixedHTML(mixed)}
+    </div>`;
+
+  const html = `
+    <div class="section-title">✏️ 二年级：竖式加减法（共10题）</div>
+    <div class="g2-grid">${g2HTML}</div>
+    <div class="section-title">🔢 三年级：竖式计算与混合运算（共3题）</div>
+    ${g3HTML}
+  `;
+
+  document.getElementById('content-area').innerHTML = html;
+  document.getElementById('footer').style.display = 'flex';
+
+  // 星星评分（互动）
+  const starsEl = document.getElementById('stars');
+  starsEl.innerHTML = '';
+  for (let i = 1; i <= 3; i++) {
+    const s = document.createElement('span');
+    s.className = 'star';
+    s.textContent = '⭐';
+    s.dataset.idx = i;
+    s.addEventListener('click', () => {
+      document.querySelectorAll('.star').forEach((el) => {
+        el.classList.toggle('lit', Number(el.dataset.idx) <= i);
+      });
+    });
+    starsEl.appendChild(s);
+  }
+}
+
+// 页面加载时自动渲染一次
+window.addEventListener('DOMContentLoaded', generateAll);
+</script>
+</body>
+</html>
